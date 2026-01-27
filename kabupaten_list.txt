@@ -1,0 +1,119 @@
+﻿alor
+badung
+bangkalan
+bangli
+banjarnegara
+bantul
+banyumas
+banyuwangi
+batang
+belu
+bima
+blitar
+blora
+bojonegoro
+bondowoso
+boyolali
+brebes
+buleleng
+cilacap
+demak
+dompu
+ende
+flores timur
+gianyar
+gresik
+grobogan
+gunungkidul
+jember
+jembrana
+jepara
+jombang
+karanganyar
+karangasem
+kebumen
+kediri
+kendal
+klaten
+klungkung
+kota batu
+kota bima
+kota blitar
+kota denpasar
+kota kediri
+kota kupang
+kota madiun
+kota magelang
+kota malang
+kota mataram
+kota mojokerto
+kota pasuruan
+kota pekalongan
+kota probolinggo
+kota salatiga
+kota semarang
+kota surabaya
+kota surakarta
+kota tegal
+kota yogyakarta
+kudus
+kulon progo
+kupang
+lamongan
+lembata
+lombok barat
+lombok tengah
+lombok timur
+lombok utara
+lumajang
+madiun
+magelang
+magetan
+malaka
+malang
+manggarai
+manggarai barat
+manggarai timur
+mojokerto
+nagekeo
+ngada
+nganjuk
+ngawi
+pacitan
+pamekasan
+pasuruan
+pati
+pekalongan
+pemalang
+ponorogo
+probolinggo
+purbalingga
+purworejo
+rembang
+rote ndao
+sabu raijua
+sampang
+semarang
+sidoarjo
+sikka
+situbondo
+sleman
+sragen
+sukoharjo
+sumba barat
+sumba barat daya
+sumba tengah
+sumba timur
+sumbawa
+sumbawa barat
+sumenep
+tabanan
+tegal
+temanggung
+timor tengah selatan
+timor tengah utara
+trenggalek
+tuban
+tulungagung
+wonogiri
+wonosobo
