@@ -45,13 +45,13 @@ const AppSidebar: React.FC = () => {
 
   const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isActive = useCallback(
     (path: string) => location.pathname === path,
-    [location.pathname]
+    [location.pathname],
   );
 
   useEffect(() => {
@@ -324,7 +324,7 @@ const AppSidebar: React.FC = () => {
           </div>
         </nav>
       </div>
-      
+
       {/* Dark Mode Toggle - Static at Bottom */}
       <div className="mt-auto mb-6 px-0">
         <button
