@@ -5,11 +5,6 @@ import { ApexOptions } from "apexcharts";
 interface KPILineChartProps {
   title: string;
   csvPath: string;
-  parameterColumn: string;
-  transformPercent?: boolean; // Multiply by 100
-  intervalDays?: number; // Sampling interval (e.g., 2 = every 2 days from END)
-  showAllDays?: boolean; // Override interval, show all days
-  filterPositive?: boolean; // Only show values > 0
   yAxisFormat?: "percent" | "number" | "comma"; // Y-axis format
   yAxisPadding?: number; // Padding percentage for y-axis
   fixedYRange?: [number, number]; // Fixed y-axis range
@@ -24,11 +19,6 @@ interface DataPoint {
 export default function KPILineChart({
   title,
   csvPath,
-  parameterColumn,
-  transformPercent = false,
-  intervalDays = 1,
-  showAllDays = false,
-  filterPositive = true,
   yAxisFormat = "number",
   yAxisPadding = 20,
   fixedYRange,
@@ -40,54 +30,37 @@ export default function KPILineChart({
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log(`[KPILineChart] Fetching: ${csvPath}`);
         const response = await fetch(csvPath);
+        
+        if (!response.ok) {
+          console.error(`[KPILineChart] Fetch failed: ${response.status} ${response.statusText} for ${csvPath}`);
+          return;
+        }
+        
         const text = await response.text();
+        console.log(`[KPILineChart] Received ${text.length} bytes`);
         const lines = text.split("\n").filter((l) => l.trim());
+        console.log(`[KPILineChart] Found ${lines.length} lines`);
 
-        // Parse CSV header
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const dateIdx = headers.indexOf("date_column");
-        const paramIdx = headers.indexOf(parameterColumn);
-
-        if (dateIdx === -1 || paramIdx === -1) {
-          console.error("Column not found:", { dateIdx, paramIdx, headers });
+        // Pre-aggregated format: date,value
+        const headers = lines[0]?.split(",").map(h => h.trim()) || [];
+        console.log(`[KPILineChart] Headers:`, headers);
+        
+        if (headers[0] !== "date" || headers[1] !== "value") {
+          console.error(`[KPILineChart] Wrong format! Expected 'date,value' but got:`, headers);
           return;
         }
 
-        // Parse data and aggregate by date (MAX)
-        const dataMap = new Map<string, number>();
-        lines.slice(1).forEach((line) => {
-          const values = line.split(",");
-          const date = values[dateIdx]?.trim();
-          const value = parseFloat(values[paramIdx]?.trim() || "0");
+        const processed = lines.slice(1).map((line) => {
+          const [date, value] = line.split(",");
+          return {
+            date: date.trim(),
+            value: parseFloat(value.trim()),
+          };
+        }).filter(d => !isNaN(d.value));
 
-          if (date && !isNaN(value)) {
-            // Filter positive if needed
-            if (filterPositive && value <= 0) return;
-
-            // Keep MAX value per date
-            const current = dataMap.get(date) || 0;
-            dataMap.set(date, Math.max(current, value));
-          }
-        });
-
-        // Convert to array and sort by date
-        let processed = Array.from(dataMap.entries())
-          .map(([date, value]) => ({
-            date,
-            value: transformPercent ? value * 100 : value,
-          }))
-          .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-          );
-
-        // Apply interval sampling from END
-        if (!showAllDays && intervalDays > 1) {
-          const reversed = [...processed].reverse();
-          const sampled = reversed.filter((_, idx) => idx % intervalDays === 0);
-          processed = sampled.reverse();
-        }
-
+        console.log(`[KPILineChart] Processed ${processed.length} valid data points from ${csvPath}`, processed.slice(0, 3));
         setData(processed);
       } catch (error) {
         console.error("Error loading KPI data:", error);
@@ -97,20 +70,26 @@ export default function KPILineChart({
     };
 
     loadData();
-  }, [
-    csvPath,
-    parameterColumn,
-    transformPercent,
-    intervalDays,
-    showAllDays,
-    filterPositive,
-  ]);
+  }, [csvPath]);
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
         <div className="flex h-[400px] items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="flex h-[400px] items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">No data available</p>
         </div>
       </div>
     );

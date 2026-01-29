@@ -5,9 +5,6 @@ import { ApexOptions } from "apexcharts";
 interface KPIBarChartProps {
   title: string;
   csvPath: string;
-  parameterColumn: string;
-  transformPercent?: boolean;
-  intervalDays?: number;
   yAxisFormat?: "percent" | "number" | "comma";
   color?: string;
 }
@@ -20,9 +17,6 @@ interface DataPoint {
 export default function KPIBarChart({
   title,
   csvPath,
-  parameterColumn,
-  transformPercent = false,
-  intervalDays = 1,
   yAxisFormat = "number",
   color = "#1f77b4",
 }: KPIBarChartProps) {
@@ -32,43 +26,36 @@ export default function KPIBarChart({
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log(`[KPIBarChart] Fetching: ${csvPath}`);
         const response = await fetch(csvPath);
+        
+        if (!response.ok) {
+          console.error(`[KPIBarChart] Fetch failed: ${response.status} ${response.statusText}`);
+          return;
+        }
+        
         const text = await response.text();
+        console.log(`[KPIBarChart] Received ${text.length} bytes`);
         const lines = text.split("\n").filter((l) => l.trim());
+        console.log(`[KPIBarChart] Found ${lines.length} lines`);
 
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const dateIdx = headers.indexOf("date_column");
-        const paramIdx = headers.indexOf(parameterColumn);
-
-        if (dateIdx === -1 || paramIdx === -1) return;
-
-        const dataMap = new Map<string, number>();
-        lines.slice(1).forEach((line) => {
-          const values = line.split(",");
-          const date = values[dateIdx]?.trim();
-          const value = parseFloat(values[paramIdx]?.trim() || "0");
-
-          if (date && !isNaN(value) && value > 0) {
-            const current = dataMap.get(date) || 0;
-            dataMap.set(
-              date,
-              Math.max(current, transformPercent ? value * 100 : value),
-            );
-          }
-        });
-
-        let processed = Array.from(dataMap.entries())
-          .map(([date, value]) => ({ date, value }))
-          .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-          );
-
-        if (intervalDays > 1) {
-          const reversed = [...processed].reverse();
-          const sampled = reversed.filter((_, idx) => idx % intervalDays === 0);
-          processed = sampled.reverse();
+        const headers = lines[0]?.split(",").map(h => h.trim()) || [];
+        console.log(`[KPIBarChart] Headers:`, headers);
+        
+        if (headers[0] !== "date" || headers[1] !== "value") {
+          console.error(`[KPIBarChart] Wrong format! Expected 'date,value' but got:`, headers);
+          return;
         }
 
+        const processed = lines.slice(1).map((line) => {
+          const [date, value] = line.split(",");
+          return {
+            date: date.trim(),
+            value: parseFloat(value.trim()),
+          };
+        }).filter(d => !isNaN(d.value));
+
+        console.log(`[KPIBarChart] Processed ${processed.length} valid data points`, processed.slice(0, 3));
         setData(processed);
       } catch (error) {
         console.error("Error loading KPI data:", error);
@@ -78,13 +65,26 @@ export default function KPIBarChart({
     };
 
     loadData();
-  }, [csvPath, parameterColumn, transformPercent, intervalDays]);
+  }, [csvPath]);
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
         <div className="flex h-[400px] items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="flex h-[400px] items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">No data available</p>
         </div>
       </div>
     );

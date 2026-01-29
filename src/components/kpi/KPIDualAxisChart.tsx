@@ -4,14 +4,11 @@ import { ApexOptions } from "apexcharts";
 
 interface KPIDualAxisChartProps {
   title: string;
-  csvPath: string;
-  leftParameter: string;
-  rightParameter: string;
+  csvPathLeft: string;
+  csvPathRight: string;
   leftLabel: string;
   rightLabel: string;
-  leftTransformPercent?: boolean;
-  intervalDays?: number;
-  showAllDays?: boolean;
+  leftIsPercent?: boolean;
   leftColor?: string;
   rightColor?: string;
 }
@@ -24,14 +21,11 @@ interface DataPoint {
 
 export default function KPIDualAxisChart({
   title,
-  csvPath,
-  leftParameter,
-  rightParameter,
+  csvPathLeft,
+  csvPathRight,
   leftLabel,
   rightLabel,
-  leftTransformPercent = false,
-  intervalDays = 1,
-  showAllDays = false,
+  leftIsPercent = false,
   leftColor = "#1f77b4",
   rightColor = "#ff7f0e",
 }: KPIDualAxisChartProps) {
@@ -41,62 +35,48 @@ export default function KPIDualAxisChart({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch(csvPath);
-        const text = await response.text();
-        const lines = text.split("\n").filter((l) => l.trim());
-
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const dateIdx = headers.indexOf("date_column");
-        const leftIdx = headers.indexOf(leftParameter);
-        const rightIdx = headers.indexOf(rightParameter);
-
-        if (dateIdx === -1 || leftIdx === -1 || rightIdx === -1) {
-          console.error("Columns not found");
+        console.log(`[KPIDualAxisChart] Fetching: ${csvPathLeft} and ${csvPathRight}`);
+        const [responseLeft, responseRight] = await Promise.all([
+          fetch(csvPathLeft),
+          fetch(csvPathRight),
+        ]);
+        
+        if (!responseLeft.ok || !responseRight.ok) {
+          console.error(`[KPIDualAxisChart] Fetch failed:`, responseLeft.status, responseRight.status);
           return;
         }
 
-        const dataMap = new Map<
-          string,
-          { leftValue: number; rightValue: number }
-        >();
-        lines.slice(1).forEach((line) => {
-          const values = line.split(",");
-          const date = values[dateIdx]?.trim();
-          const leftVal = parseFloat(values[leftIdx]?.trim() || "0");
-          const rightVal = parseFloat(values[rightIdx]?.trim() || "0");
+        const textLeft = await responseLeft.text();
+        const textRight = await responseRight.text();
 
-          if (date && !isNaN(leftVal) && !isNaN(rightVal)) {
-            if (leftVal > 0 || rightVal > 0) {
-              const current = dataMap.get(date) || {
-                leftValue: 0,
-                rightValue: 0,
-              };
-              dataMap.set(date, {
-                leftValue: Math.max(current.leftValue, leftVal),
-                rightValue: Math.max(current.rightValue, rightVal),
-              });
-            }
-          }
+        const linesLeft = textLeft.split("\n").filter((l) => l.trim());
+        const linesRight = textRight.split("\n").filter((l) => l.trim());
+
+        const dataLeft = new Map<string, number>();
+        const dataRight = new Map<string, number>();
+
+        linesLeft.slice(1).forEach((line) => {
+          const [date, value] = line.split(",");
+          dataLeft.set(date.trim(), parseFloat(value.trim()));
         });
 
-        let processed = Array.from(dataMap.entries())
-          .map(([date, vals]) => ({
+        linesRight.slice(1).forEach((line) => {
+          const [date, value] = line.split(",");
+          dataRight.set(date.trim(), parseFloat(value.trim()));
+        });
+
+        const allDates = new Set([...dataLeft.keys(), ...dataRight.keys()]);
+        const processed = Array.from(allDates)
+          .map((date) => ({
             date,
-            leftValue: leftTransformPercent
-              ? vals.leftValue * 100
-              : vals.leftValue,
-            rightValue: vals.rightValue,
+            leftValue: dataLeft.get(date) || 0,
+            rightValue: dataRight.get(date) || 0,
           }))
           .sort(
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
-        if (!showAllDays && intervalDays > 1) {
-          const reversed = [...processed].reverse();
-          const sampled = reversed.filter((_, idx) => idx % intervalDays === 0);
-          processed = sampled.reverse();
-        }
-
+        console.log(`[KPIDualAxisChart] Loaded ${processed.length} data points`);
         setData(processed);
       } catch (error) {
         console.error("Error loading dual axis data:", error);
@@ -106,20 +86,26 @@ export default function KPIDualAxisChart({
     };
 
     loadData();
-  }, [
-    csvPath,
-    leftParameter,
-    rightParameter,
-    leftTransformPercent,
-    intervalDays,
-    showAllDays,
-  ]);
+  }, [csvPathLeft, csvPathRight]);
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
         <div className="flex h-[400px] items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="flex h-[400px] items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">No data available</p>
         </div>
       </div>
     );
@@ -171,7 +157,7 @@ export default function KPIDualAxisChart({
         labels: {
           style: { colors: [leftColor], fontSize: "11px" },
           formatter: (value: number) =>
-            leftTransformPercent ? `${value.toFixed(2)}%` : value.toFixed(2),
+            leftIsPercent ? `${value.toFixed(2)}%` : value.toFixed(2),
         },
       },
       {

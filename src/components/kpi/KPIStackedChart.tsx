@@ -4,9 +4,8 @@ import { ApexOptions } from "apexcharts";
 
 interface KPIStackedChartProps {
   title: string;
-  csvPath: string;
-  bottomParameter: string;
-  topParameter: string;
+  csvPathBottom: string;
+  csvPathTop: string;
   bottomLabel: string;
   topLabel: string;
   yAxisFormat?: "comma" | "number";
@@ -22,9 +21,8 @@ interface DataPoint {
 
 export default function KPIStackedChart({
   title,
-  csvPath,
-  bottomParameter,
-  topParameter,
+  csvPathBottom,
+  csvPathTop,
   bottomLabel,
   topLabel,
   yAxisFormat = "comma",
@@ -37,46 +35,48 @@ export default function KPIStackedChart({
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch(csvPath);
-        const text = await response.text();
-        const lines = text.split("\n").filter((l) => l.trim());
-
-        const headers = lines[0].split(",").map((h) => h.trim());
-        const dateIdx = headers.indexOf("date_column");
-        const bottomIdx = headers.indexOf(bottomParameter);
-        const topIdx = headers.indexOf(topParameter);
-
-        if (dateIdx === -1 || bottomIdx === -1 || topIdx === -1) {
-          console.error("Columns not found");
+        console.log(`[KPIStackedChart] Fetching: ${csvPathBottom} and ${csvPathTop}`);
+        const [responseBottom, responseTop] = await Promise.all([
+          fetch(csvPathBottom),
+          fetch(csvPathTop),
+        ]);
+        
+        if (!responseBottom.ok || !responseTop.ok) {
+          console.error(`[KPIStackedChart] Fetch failed:`, responseBottom.status, responseTop.status);
           return;
         }
 
-        const dataMap = new Map<string, { bottom: number; top: number }>();
-        lines.slice(1).forEach((line) => {
-          const values = line.split(",");
-          const date = values[dateIdx]?.trim();
-          const bottomVal = parseFloat(values[bottomIdx]?.trim() || "0");
-          const topVal = parseFloat(values[topIdx]?.trim() || "0");
+        const textBottom = await responseBottom.text();
+        const textTop = await responseTop.text();
 
-          if (date && !isNaN(bottomVal) && !isNaN(topVal)) {
-            const current = dataMap.get(date) || { bottom: 0, top: 0 };
-            dataMap.set(date, {
-              bottom: Math.max(current.bottom, bottomVal),
-              top: Math.max(current.top, topVal),
-            });
-          }
+        const linesBottom = textBottom.split("\n").filter((l) => l.trim());
+        const linesTop = textTop.split("\n").filter((l) => l.trim());
+
+        const dataBottom = new Map<string, number>();
+        const dataTop = new Map<string, number>();
+
+        linesBottom.slice(1).forEach((line) => {
+          const [date, value] = line.split(",");
+          dataBottom.set(date.trim(), parseFloat(value.trim()));
         });
 
-        const processed = Array.from(dataMap.entries())
-          .map(([date, vals]) => ({
+        linesTop.slice(1).forEach((line) => {
+          const [date, value] = line.split(",");
+          dataTop.set(date.trim(), parseFloat(value.trim()));
+        });
+
+        const allDates = new Set([...dataBottom.keys(), ...dataTop.keys()]);
+        const processed = Array.from(allDates)
+          .map((date) => ({
             date,
-            bottom: vals.bottom,
-            top: vals.top,
+            bottom: dataBottom.get(date) || 0,
+            top: dataTop.get(date) || 0,
           }))
           .sort(
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
+        console.log(`[KPIStackedChart] Loaded ${processed.length} data points`);
         setData(processed);
       } catch (error) {
         console.error("Error loading stacked data:", error);
@@ -86,13 +86,26 @@ export default function KPIStackedChart({
     };
 
     loadData();
-  }, [csvPath, bottomParameter, topParameter]);
+  }, [csvPathBottom, csvPathTop]);
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
         <div className="flex h-[400px] items-center justify-center">
           <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+          {title}
+        </h3>
+        <div className="flex h-[400px] items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">No data available</p>
         </div>
       </div>
     );

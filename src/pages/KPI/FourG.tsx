@@ -21,9 +21,8 @@ export default function FourG() {
           {/* Chart 1: Availability */}
           <KPILineChart
             title="1. Availability 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            parameterColumn="g4_avail_auto"
-            intervalDays={3}
+            csvPath="/kpi_results/4g/availability.csv"
+            fixedYRange={[0.9995, 1.0001]}
             yAxisFormat="number"
             color="#1f77b4"
           />
@@ -31,9 +30,7 @@ export default function FourG() {
           {/* Chart 2: S1 Failure Rate */}
           <KPILineChart
             title="2. S1 Failure Rate 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            parameterColumn="s1_failure"
-            intervalDays={3}
+            csvPath="/kpi_results/4g/s1_failure.csv"
             yAxisFormat="number"
             color="#1f77b4"
           />
@@ -41,9 +38,7 @@ export default function FourG() {
           {/* Chart 3: RRC Connection User */}
           <KPILineChart
             title="3. RRC Connection User 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            parameterColumn="rrc_ue"
-            intervalDays={3}
+            csvPath="/kpi_results/4g/rrc_ue.csv"
             yAxisFormat="comma"
             color="#1f77b4"
           />
@@ -51,9 +46,7 @@ export default function FourG() {
           {/* Chart 4: Total Traffic */}
           <KPIAreaChart
             title="4. Total Traffic 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            parameterColumn="traffic_4g"
-            intervalDays={3}
+            csvPath="/kpi_results/4g/traffic.csv"
             yAxisFormat="comma"
             color="#1f77b4"
           />
@@ -61,12 +54,10 @@ export default function FourG() {
           {/* Chart 5: EUT vs #Cells <31 Mbps */}
           <KPIDualAxisChart
             title="5. EUT vs #Cells <31 Mbps 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            leftParameter="eut_4g_bh"
-            rightParameter="eut_4g_bh_count_less_31"
+            csvPathLeft="/kpi_results/4g/eut.csv"
+            csvPathRight="/kpi_results/4g/eut_count_less_31.csv"
             leftLabel="EUT"
             rightLabel="#Cells <31"
-            intervalDays={3}
             leftColor="#1f77b4"
             rightColor="#ff7f0e"
           />
@@ -74,13 +65,11 @@ export default function FourG() {
           {/* Chart 6: DL PRB Utilization */}
           <KPIDualAxisChart
             title="6. DL PRB Utilization 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            leftParameter="dl_prb_util"
-            rightParameter="dl_prb_util_count_gt_09"
+            csvPathLeft="/kpi_results/4g/dl_prb_util.csv"
+            csvPathRight="/kpi_results/4g/dl_prb_util_count.csv"
             leftLabel="DL PRB Util"
             rightLabel="#Cells >90%"
-            leftTransformPercent={true}
-            showAllDays={true}
+            leftIsPercent={true}
             leftColor="#1f77b4"
             rightColor="#ff7f0e"
           />
@@ -88,12 +77,10 @@ export default function FourG() {
           {/* Chart 7: CQI */}
           <KPIDualAxisChart
             title="7. CQI 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            leftParameter="cqi_bh"
-            rightParameter="cqi_less_than_7"
+            csvPathLeft="/kpi_results/4g/cqi.csv"
+            csvPathRight="/kpi_results/4g/cqi_less_7.csv"
             leftLabel="CQI"
             rightLabel="#Cells <7"
-            showAllDays={true}
             leftColor="#1f77b4"
             rightColor="#ff7f0e"
           />
@@ -101,9 +88,7 @@ export default function FourG() {
           {/* Chart 8: DL User Throughput */}
           <KPILineChart
             title="8. DL User Throughput 4G"
-            csvPath="/kpi_data/data_4g.csv"
-            parameterColumn="dl_user_thp_bhv"
-            showAllDays={true}
+            csvPath="/kpi_results/4g/dl_user_thp.csv"
             yAxisFormat="number"
             color="#1f77b4"
           />
@@ -111,9 +96,8 @@ export default function FourG() {
           {/* Chart 9: Total Traffic 4G + 5G (Stacked) */}
           <KPIStackedChart
             title="9. Total Traffic 4G + 5G (Stacked)"
-            csvPath="/kpi_data/data_4g.csv"
-            bottomParameter="traffic_4g"
-            topParameter="traffic_5g"
+            csvPathBottom="/kpi_results/4g/traffic.csv"
+            csvPathTop="/kpi_results/4g/traffic_5g.csv"
             bottomLabel="4G"
             topLabel="5G"
             yAxisFormat="comma"
@@ -124,9 +108,8 @@ export default function FourG() {
           {/* Chart 10: Ratio Traffic 4G vs 5G */}
           <KPIStackedPercentChart
             title="10. Ratio Traffic 4G vs 5G (100%)"
-            csvPath="/kpi_data/data_4g.csv"
-            bottomParameter="traffic_4g"
-            topParameter="traffic_5g"
+            csvPathBottom="/kpi_results/4g/traffic.csv"
+            csvPathTop="/kpi_results/4g/traffic_5g.csv"
             bottomLabel="4G"
             topLabel="5G"
             bottomColor="#1f77b4"
@@ -136,9 +119,8 @@ export default function FourG() {
           {/* Chart 11: RRC User 4G + 5G (Stacked) */}
           <KPIStackedChart
             title="11. RRC User 4G + 5G (Stacked)"
-            csvPath="/kpi_data/data_4g.csv"
-            bottomParameter="rrc_ue"
-            topParameter="da_5g"
+            csvPathBottom="/kpi_results/4g/rrc_ue.csv"
+            csvPathTop="/kpi_results/4g/da_5g.csv"
             bottomLabel="4G"
             topLabel="5G"
             yAxisFormat="comma"
@@ -149,9 +131,8 @@ export default function FourG() {
           {/* Chart 12: Ratio RRC User 4G vs 5G */}
           <KPIStackedPercentChart
             title="12. Ratio RRC User 4G vs 5G (100%)"
-            csvPath="/kpi_data/data_4g.csv"
-            bottomParameter="rrc_ue"
-            topParameter="da_5g"
+            csvPathBottom="/kpi_results/4g/rrc_ue.csv"
+            csvPathTop="/kpi_results/4g/da_5g.csv"
             bottomLabel="4G"
             topLabel="5G"
             bottomColor="#1f77b4"
