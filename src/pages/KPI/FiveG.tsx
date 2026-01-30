@@ -25,6 +25,7 @@ export default function FiveG() {
             fixedYRange={[96, 105]}
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 2: Accessibility */}
@@ -33,14 +34,16 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/accessibility.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 3: Call Drop Rate */}
           <KPIAreaChart
             title="3. Call Drop Rate 5G"
             csvPath="/kpi_results/5g/cdr.csv"
-            yAxisFormat="number"
+            yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 4: Sgnb Addition Success Rate */}
@@ -49,6 +52,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/sgnb_addition.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 5: Total Traffic */}
@@ -57,6 +61,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/traffic.csv"
             yAxisFormat="comma"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 6: EUT vs DL User Throughput */}
@@ -68,6 +73,7 @@ export default function FiveG() {
             line2Label="DL User Thp"
             line1Color="#1f77b4"
             line2Color="#ff7f0e"
+            simplifyXAxis={true}
           />
 
           {/* Chart 7: User 5G */}
@@ -76,6 +82,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/user.csv"
             yAxisFormat="comma"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 8: DL PRB Utilization */}
@@ -88,6 +95,8 @@ export default function FiveG() {
             leftIsPercent={true}
             leftColor="#1f77b4"
             rightColor="#ff7f0e"
+            simplifyXAxis={true}
+            filterLeftGreaterThanZero={true}
           />
 
           {/* Chart 9: Inter esgNB Handover SR */}
@@ -96,6 +105,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/inter_esgnb.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 10: Intra esgNB Handover SR */}
@@ -104,6 +114,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/intra_esgnb.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 11: Intra sgNB Intrafreq HO SR */}
@@ -112,6 +123,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/intra_sgnb_intrafreq.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
 
           {/* Chart 12: Inter sgNB Intrafreq HO SR */}
@@ -120,6 +132,7 @@ export default function FiveG() {
             csvPath="/kpi_results/5g/inter_sgnb_intrafreq.csv"
             yAxisFormat="percent"
             color="#1f77b4"
+            simplifyXAxis={true}
           />
         </div>
       </div>

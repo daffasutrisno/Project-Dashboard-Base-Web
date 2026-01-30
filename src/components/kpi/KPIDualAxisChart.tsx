@@ -11,6 +11,8 @@ interface KPIDualAxisChartProps {
   leftIsPercent?: boolean;
   leftColor?: string;
   rightColor?: string;
+  simplifyXAxis?: boolean; // New prop untuk menyederhanakan x-axis
+  filterLeftGreaterThanZero?: boolean; // Filter to show only data where left value > 0
 }
 
 interface DataPoint {
@@ -28,6 +30,8 @@ export default function KPIDualAxisChart({
   leftIsPercent = false,
   leftColor = "#1f77b4",
   rightColor = "#ff7f0e",
+  simplifyXAxis = false,
+  filterLeftGreaterThanZero = false,
 }: KPIDualAxisChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,14 +39,20 @@ export default function KPIDualAxisChart({
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log(`[KPIDualAxisChart] Fetching: ${csvPathLeft} and ${csvPathRight}`);
+        console.log(
+          `[KPIDualAxisChart] Fetching: ${csvPathLeft} and ${csvPathRight}`,
+        );
         const [responseLeft, responseRight] = await Promise.all([
           fetch(csvPathLeft),
           fetch(csvPathRight),
         ]);
-        
+
         if (!responseLeft.ok || !responseRight.ok) {
-          console.error(`[KPIDualAxisChart] Fetch failed:`, responseLeft.status, responseRight.status);
+          console.error(
+            `[KPIDualAxisChart] Fetch failed:`,
+            responseLeft.status,
+            responseRight.status,
+          );
           return;
         }
 
@@ -66,7 +76,7 @@ export default function KPIDualAxisChart({
         });
 
         const allDates = new Set([...dataLeft.keys(), ...dataRight.keys()]);
-        const processed = Array.from(allDates)
+        let processed = Array.from(allDates)
           .map((date) => ({
             date,
             leftValue: dataLeft.get(date) || 0,
@@ -76,7 +86,14 @@ export default function KPIDualAxisChart({
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
-        console.log(`[KPIDualAxisChart] Loaded ${processed.length} data points`);
+        // Apply filter if enabled
+        if (filterLeftGreaterThanZero) {
+          processed = processed.filter((d) => d.leftValue > 0);
+        }
+
+        console.log(
+          `[KPIDualAxisChart] Loaded ${processed.length} data points (filter: ${filterLeftGreaterThanZero ? "left>0" : "none"})`,
+        );
         setData(processed);
       } catch (error) {
         console.error("Error loading dual axis data:", error);
@@ -112,6 +129,25 @@ export default function KPIDualAxisChart({
   }
 
   const categories = data.map((d) => {
+    if (simplifyXAxis) {
+      // Format: "Jan 2025" untuk x-axis yang lebih clean
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const date = new Date(d.date);
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
     const date = new Date(d.date);
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   });
@@ -140,13 +176,15 @@ export default function KPIDualAxisChart({
       strokeDashArray: 3,
       yaxis: { lines: { show: true } },
     },
-    dataLabels: { enabled: false },
-    labels: categories,
     xaxis: {
+      categories: categories,
       labels: {
-        rotate: categories.length > 20 ? -90 : -45,
+        rotate: simplifyXAxis ? 0 : categories.length > 20 ? -90 : -45,
         style: { fontSize: "10px", colors: "#6B7280" },
       },
+      tickAmount: simplifyXAxis
+        ? Math.min(12, Math.ceil(categories.length / 30))
+        : undefined,
     },
     yaxis: [
       {
@@ -181,6 +219,38 @@ export default function KPIDualAxisChart({
     tooltip: {
       shared: true,
       intersect: false,
+      x: {
+        formatter: (value: number) => {
+          if (simplifyXAxis && data[value - 1]) {
+            // Show full date in tooltip when x-axis is simplified
+            const date = new Date(data[value - 1].date);
+            const monthNames = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+          }
+          return categories[value - 1] || "";
+        },
+      },
+      y: {
+        formatter: (value: number, { seriesIndex }: any) => {
+          if (seriesIndex === 0) {
+            return leftIsPercent ? `${value.toFixed(2)}%` : value.toFixed(2);
+          }
+          return value.toFixed(0);
+        },
+      },
     },
   };
 

@@ -10,6 +10,7 @@ interface KPIDualLineChartProps {
   line2Label: string;
   line1Color?: string;
   line2Color?: string;
+  simplifyXAxis?: boolean;
 }
 
 interface DataPoint {
@@ -26,6 +27,7 @@ export default function KPIDualLineChart({
   line2Label,
   line1Color = "#1f77b4",
   line2Color = "#ff7f0e",
+  simplifyXAxis = false,
 }: KPIDualLineChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,9 +41,13 @@ export default function KPIDualLineChart({
           fetch(csvPath1),
           fetch(csvPath2),
         ]);
-        
+
         if (!response1.ok || !response2.ok) {
-          console.error(`[KPIDualLineChart] Fetch failed:`, response1.status, response2.status);
+          console.error(
+            `[KPIDualLineChart] Fetch failed:`,
+            response1.status,
+            response2.status,
+          );
           return;
         }
 
@@ -77,7 +83,9 @@ export default function KPIDualLineChart({
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
-        console.log(`[KPIDualLineChart] Loaded ${processed.length} data points`);
+        console.log(
+          `[KPIDualLineChart] Loaded ${processed.length} data points`,
+        );
         setData(processed);
       } catch (error) {
         console.error("Error loading dual line data:", error);
@@ -114,6 +122,23 @@ export default function KPIDualLineChart({
 
   const categories = data.map((d) => {
     const date = new Date(d.date);
+    if (simplifyXAxis) {
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   });
   const series1 = data.map((d) => d.value1);
@@ -145,9 +170,12 @@ export default function KPIDualLineChart({
     xaxis: {
       categories: categories,
       labels: {
-        rotate: categories.length > 20 ? -90 : -45,
+        rotate: simplifyXAxis ? 0 : categories.length > 20 ? -90 : -45,
         style: { fontSize: "10px", colors: "#6B7280" },
       },
+      tickAmount: simplifyXAxis
+        ? Math.min(12, Math.ceil(categories.length / 30))
+        : undefined,
     },
     yaxis: {
       labels: {
@@ -165,6 +193,29 @@ export default function KPIDualLineChart({
     tooltip: {
       shared: true,
       intersect: false,
+      x: {
+        formatter: (value: number, { dataPointIndex }: any) => {
+          if (simplifyXAxis && data[dataPointIndex]) {
+            const date = new Date(data[dataPointIndex].date);
+            const monthNames = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+          }
+          return categories[dataPointIndex] || "";
+        },
+      },
     },
   };
 

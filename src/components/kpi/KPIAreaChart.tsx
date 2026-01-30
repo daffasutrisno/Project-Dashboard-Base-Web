@@ -7,6 +7,7 @@ interface KPIAreaChartProps {
   csvPath: string;
   yAxisFormat?: "percent" | "number" | "comma";
   color?: string;
+  simplifyXAxis?: boolean;
 }
 
 interface DataPoint {
@@ -19,6 +20,7 @@ export default function KPIAreaChart({
   csvPath,
   yAxisFormat = "number",
   color = "#2ca02c",
+  simplifyXAxis = false,
 }: KPIAreaChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,34 +30,45 @@ export default function KPIAreaChart({
       try {
         console.log(`[KPIAreaChart] Fetching: ${csvPath}`);
         const response = await fetch(csvPath);
-        
+
         if (!response.ok) {
-          console.error(`[KPIAreaChart] Fetch failed: ${response.status} ${response.statusText}`);
+          console.error(
+            `[KPIAreaChart] Fetch failed: ${response.status} ${response.statusText}`,
+          );
           return;
         }
-        
+
         const text = await response.text();
         console.log(`[KPIAreaChart] Received ${text.length} bytes`);
         const lines = text.split("\n").filter((l) => l.trim());
         console.log(`[KPIAreaChart] Found ${lines.length} lines`);
 
-        const headers = lines[0]?.split(",").map(h => h.trim()) || [];
+        const headers = lines[0]?.split(",").map((h) => h.trim()) || [];
         console.log(`[KPIAreaChart] Headers:`, headers);
-        
+
         if (headers[0] !== "date" || headers[1] !== "value") {
-          console.error(`[KPIAreaChart] Wrong format! Expected 'date,value' but got:`, headers);
+          console.error(
+            `[KPIAreaChart] Wrong format! Expected 'date,value' but got:`,
+            headers,
+          );
           return;
         }
 
-        const processed = lines.slice(1).map((line) => {
-          const [date, value] = line.split(",");
-          return {
-            date: date.trim(),
-            value: parseFloat(value.trim()),
-          };
-        }).filter(d => !isNaN(d.value));
+        const processed = lines
+          .slice(1)
+          .map((line) => {
+            const [date, value] = line.split(",");
+            return {
+              date: date.trim(),
+              value: parseFloat(value.trim()),
+            };
+          })
+          .filter((d) => !isNaN(d.value));
 
-        console.log(`[KPIAreaChart] Processed ${processed.length} valid data points`, processed.slice(0, 3));
+        console.log(
+          `[KPIAreaChart] Processed ${processed.length} valid data points`,
+          processed.slice(0, 3),
+        );
         setData(processed);
       } catch (error) {
         console.error("Error loading KPI data:", error);
@@ -92,6 +105,23 @@ export default function KPIAreaChart({
 
   const categories = data.map((d) => {
     const date = new Date(d.date);
+    if (simplifyXAxis) {
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   });
   const values = data.map((d) => d.value);
@@ -126,9 +156,12 @@ export default function KPIAreaChart({
     xaxis: {
       categories: categories,
       labels: {
-        rotate: categories.length > 20 ? -90 : -45,
+        rotate: simplifyXAxis ? 0 : categories.length > 20 ? -90 : -45,
         style: { fontSize: "10px", colors: "#6B7280" },
       },
+      tickAmount: simplifyXAxis
+        ? Math.min(12, Math.ceil(categories.length / 30))
+        : undefined,
     },
     yaxis: {
       labels: {
@@ -141,6 +174,29 @@ export default function KPIAreaChart({
       },
     },
     tooltip: {
+      x: {
+        formatter: (value: number, { dataPointIndex }: any) => {
+          if (simplifyXAxis && data[dataPointIndex]) {
+            const date = new Date(data[dataPointIndex].date);
+            const monthNames = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+          }
+          return categories[dataPointIndex] || "";
+        },
+      },
       y: {
         formatter: (value: number) => {
           if (yAxisFormat === "percent") return `${value.toFixed(2)}%`;

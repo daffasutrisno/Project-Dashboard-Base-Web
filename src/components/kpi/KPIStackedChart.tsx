@@ -11,6 +11,8 @@ interface KPIStackedChartProps {
   yAxisFormat?: "comma" | "number";
   bottomColor?: string;
   topColor?: string;
+  filterMode?: "bottom-only" | "both-required" | "none"; // Filter mode
+  simplifyXAxis?: boolean;
 }
 
 interface DataPoint {
@@ -28,6 +30,8 @@ export default function KPIStackedChart({
   yAxisFormat = "comma",
   bottomColor = "#1f77b4",
   topColor = "#ff7f0e",
+  filterMode = "none",
+  simplifyXAxis = false,
 }: KPIStackedChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,14 +39,20 @@ export default function KPIStackedChart({
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log(`[KPIStackedChart] Fetching: ${csvPathBottom} and ${csvPathTop}`);
+        console.log(
+          `[KPIStackedChart] Fetching: ${csvPathBottom} and ${csvPathTop}`,
+        );
         const [responseBottom, responseTop] = await Promise.all([
           fetch(csvPathBottom),
           fetch(csvPathTop),
         ]);
-        
+
         if (!responseBottom.ok || !responseTop.ok) {
-          console.error(`[KPIStackedChart] Fetch failed:`, responseBottom.status, responseTop.status);
+          console.error(
+            `[KPIStackedChart] Fetch failed:`,
+            responseBottom.status,
+            responseTop.status,
+          );
           return;
         }
 
@@ -66,7 +76,7 @@ export default function KPIStackedChart({
         });
 
         const allDates = new Set([...dataBottom.keys(), ...dataTop.keys()]);
-        const processed = Array.from(allDates)
+        let processed = Array.from(allDates)
           .map((date) => ({
             date,
             bottom: dataBottom.get(date) || 0,
@@ -76,7 +86,18 @@ export default function KPIStackedChart({
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
           );
 
-        console.log(`[KPIStackedChart] Loaded ${processed.length} data points`);
+        // Apply filter based on mode
+        if (filterMode === "bottom-only") {
+          // Only show dates where bottom > 0 (untuk 4G+5G, show if 4G exists)
+          processed = processed.filter((d) => d.bottom > 0);
+        } else if (filterMode === "both-required") {
+          // Only show dates where both > 0
+          processed = processed.filter((d) => d.bottom > 0 && d.top > 0);
+        }
+
+        console.log(
+          `[KPIStackedChart] Loaded ${processed.length} data points (filter: ${filterMode})`,
+        );
         setData(processed);
       } catch (error) {
         console.error("Error loading stacked data:", error);
@@ -113,6 +134,23 @@ export default function KPIStackedChart({
 
   const categories = data.map((d) => {
     const date = new Date(d.date);
+    if (simplifyXAxis) {
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   });
 
@@ -140,9 +178,12 @@ export default function KPIStackedChart({
     xaxis: {
       categories: categories,
       labels: {
-        rotate: categories.length > 20 ? -90 : -45,
+        rotate: simplifyXAxis ? 0 : categories.length > 20 ? -90 : -45,
         style: { fontSize: "10px", colors: "#6B7280" },
       },
+      tickAmount: simplifyXAxis
+        ? Math.min(12, Math.ceil(categories.length / 30))
+        : undefined,
     },
     yaxis: {
       labels: {
@@ -160,6 +201,29 @@ export default function KPIStackedChart({
     tooltip: {
       shared: true,
       intersect: false,
+      x: {
+        formatter: (value: number, { dataPointIndex }: any) => {
+          if (simplifyXAxis && data[dataPointIndex]) {
+            const date = new Date(data[dataPointIndex].date);
+            const monthNames = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+          }
+          return categories[dataPointIndex] || "";
+        },
+      },
       y: {
         formatter: (value: number) =>
           yAxisFormat === "comma" ? value.toLocaleString() : value.toFixed(2),

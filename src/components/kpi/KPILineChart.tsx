@@ -9,6 +9,8 @@ interface KPILineChartProps {
   yAxisPadding?: number; // Padding percentage for y-axis
   fixedYRange?: [number, number]; // Fixed y-axis range
   color?: string; // Line color
+  multiplyBy100?: boolean; // Multiply values by 100 (for decimal to percent conversion)
+  simplifyXAxis?: boolean; // Simplify x-axis to show month-year format
 }
 
 interface DataPoint {
@@ -23,6 +25,8 @@ export default function KPILineChart({
   yAxisPadding = 20,
   fixedYRange,
   color = "#1f77b4",
+  multiplyBy100 = false,
+  simplifyXAxis = false,
 }: KPILineChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,35 +36,51 @@ export default function KPILineChart({
       try {
         console.log(`[KPILineChart] Fetching: ${csvPath}`);
         const response = await fetch(csvPath);
-        
+
         if (!response.ok) {
-          console.error(`[KPILineChart] Fetch failed: ${response.status} ${response.statusText} for ${csvPath}`);
+          console.error(
+            `[KPILineChart] Fetch failed: ${response.status} ${response.statusText} for ${csvPath}`,
+          );
           return;
         }
-        
+
         const text = await response.text();
         console.log(`[KPILineChart] Received ${text.length} bytes`);
         const lines = text.split("\n").filter((l) => l.trim());
         console.log(`[KPILineChart] Found ${lines.length} lines`);
 
         // Pre-aggregated format: date,value
-        const headers = lines[0]?.split(",").map(h => h.trim()) || [];
+        const headers = lines[0]?.split(",").map((h) => h.trim()) || [];
         console.log(`[KPILineChart] Headers:`, headers);
-        
+
         if (headers[0] !== "date" || headers[1] !== "value") {
-          console.error(`[KPILineChart] Wrong format! Expected 'date,value' but got:`, headers);
+          console.error(
+            `[KPILineChart] Wrong format! Expected 'date,value' but got:`,
+            headers,
+          );
           return;
         }
 
-        const processed = lines.slice(1).map((line) => {
-          const [date, value] = line.split(",");
-          return {
-            date: date.trim(),
-            value: parseFloat(value.trim()),
-          };
-        }).filter(d => !isNaN(d.value));
+        const processed = lines
+          .slice(1)
+          .map((line) => {
+            const [date, value] = line.split(",");
+            let numValue = parseFloat(value.trim());
+            // Multiply by 100 if needed (for decimal to percent conversion)
+            if (multiplyBy100) {
+              numValue = numValue * 100;
+            }
+            return {
+              date: date.trim(),
+              value: numValue,
+            };
+          })
+          .filter((d) => !isNaN(d.value));
 
-        console.log(`[KPILineChart] Processed ${processed.length} valid data points from ${csvPath}`, processed.slice(0, 3));
+        console.log(
+          `[KPILineChart] Processed ${processed.length} valid data points from ${csvPath}`,
+          processed.slice(0, 3),
+        );
         setData(processed);
       } catch (error) {
         console.error("Error loading KPI data:", error);
@@ -97,6 +117,23 @@ export default function KPILineChart({
 
   const categories = data.map((d) => {
     const date = new Date(d.date);
+    if (simplifyXAxis) {
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    }
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   });
   const values = data.map((d) => d.value);
@@ -141,12 +178,15 @@ export default function KPILineChart({
     xaxis: {
       categories: categories,
       labels: {
-        rotate: categories.length > 20 ? -90 : -45,
+        rotate: simplifyXAxis ? 0 : categories.length > 20 ? -90 : -45,
         style: {
           fontSize: "10px",
           colors: "#6B7280",
         },
       },
+      tickAmount: simplifyXAxis
+        ? Math.min(12, Math.ceil(categories.length / 30))
+        : undefined,
       axisBorder: { show: true, color: "#E5E7EB" },
       axisTicks: { show: true, color: "#E5E7EB" },
     },
@@ -167,6 +207,29 @@ export default function KPILineChart({
     },
     tooltip: {
       enabled: true,
+      x: {
+        formatter: (value: number, { dataPointIndex }: any) => {
+          if (simplifyXAxis && data[dataPointIndex]) {
+            const date = new Date(data[dataPointIndex].date);
+            const monthNames = [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ];
+            return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+          }
+          return categories[dataPointIndex] || "";
+        },
+      },
       y: {
         formatter: (value: number) => {
           if (yAxisFormat === "percent") return `${value.toFixed(2)}%`;
