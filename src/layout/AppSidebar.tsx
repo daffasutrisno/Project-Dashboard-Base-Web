@@ -22,8 +22,8 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "KPI Monitoring",
     subItems: [
-      { name: "4G", path: "/kpi-monitoring/4g", pro: false },
-      { name: "5G", path: "/kpi-monitoring/5g", pro: false },
+      { name: "4G", path: "/kpi-monitoring/4g" },
+      { name: "5G", path: "/kpi-monitoring/5g" },
     ],
   },
   {

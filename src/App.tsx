@@ -21,9 +21,11 @@ export default function App() {
               path="/"
               element={<Navigate to="/forecast-result/regional" replace />}
             />
+
             {/* KPI Monitoring Routes */}
             <Route path="/kpi-monitoring/4g" element={<FourG />} />
             <Route path="/kpi-monitoring/5g" element={<FiveG />} />
+
             {/* Forecast Result Routes */}
             <Route path="/forecast-result/regional" element={<Regional />} />
             <Route path="/forecast-result/provinsi" element={<Provinsi />} />
