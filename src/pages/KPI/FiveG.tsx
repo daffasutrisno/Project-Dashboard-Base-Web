@@ -39,9 +39,10 @@ export default function FiveG() {
 
           {/* Chart 3: Call Drop Rate */}
           <KPIAreaChart
-            title="3. Call Drop Rate 5G"
+            title="3. Call Drop Rate 5G (×10⁻² %)"
             csvPath="/kpi_results/5g/cdr.csv"
-            yAxisFormat="percent"
+            yAxisFormat="number"
+            multiplyBy={10000}
             color="#1f77b4"
             simplifyXAxis={true}
           />

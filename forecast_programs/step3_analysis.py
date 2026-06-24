@@ -288,13 +288,21 @@ def analyze_kabupaten():
             meta_key = key.replace(' ', '_')
             meta = kabupaten_meta.get(meta_key, {'region': 'Unknown', 'province': 'Unknown'})
 
-            # Growth table (for ranking)
+            # Growth table (for ranking) — 16 columns matching web expectation
             growth_data.append({
                 'Kabupaten': kabupaten_name,
                 'Region': meta['region'],
                 'Province': meta['province'],
                 'Hist_Mean': round(hist_mean, 2),
+                'Hist_Std': round(hist_std, 2),
+                'Hist_Min': round(hist_min, 2),
+                'Hist_Max': round(hist_max, 2),
                 'Fore_Mean': round(fore_mean, 2),
+                'Fore_Std': round(fore_std, 2),
+                'Fore_Min': round(fore_min, 2),
+                'Fore_Max': round(fore_max, 2),
+                'Data_Points_Hist': hist_count,
+                'Data_Points_Fore': fore_count,
                 'Absolute_Growth': round(absolute_growth, 2),
                 'Percentage_Growth': round(percentage_growth, 2),
                 'Has_Forecast': len(forecast) > 0

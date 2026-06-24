@@ -8,6 +8,7 @@ interface KPIAreaChartProps {
   yAxisFormat?: "percent" | "number" | "comma";
   color?: string;
   simplifyXAxis?: boolean;
+  multiplyBy?: number; // Multiply values (e.g. 10000 for tiny CDR values)
 }
 
 interface DataPoint {
@@ -21,6 +22,7 @@ export default function KPIAreaChart({
   yAxisFormat = "number",
   color = "#2ca02c",
   simplifyXAxis = false,
+  multiplyBy = 1,
 }: KPIAreaChartProps) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +62,7 @@ export default function KPIAreaChart({
             const [date, value] = line.split(",");
             return {
               date: date.trim(),
-              value: parseFloat(value.trim()),
+              value: parseFloat(value.trim()) * multiplyBy,
             };
           })
           .filter((d) => !isNaN(d.value));
